@@ -1,0 +1,169 @@
+---
+title: "HW3-Random forest and Boosting"
+author: "Guangjin Zhou"
+date: "April 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## library
+
+```{r}
+library(ISLR);library(randomForest); library(gbm)
+```
+
+
+ISLR has a dataset Khan. It contains gene expression data for 4 types of small round blue cell tumors. Use help(Khan) to see details. Apply both random forests and tree boosting to the training set, and tuning the hyperparameters to improve the models. Report your main steps and ???nal results 
+
+# Khan data
+
+```{r cars}
+ls("package:ISLR") ## check package content
+mode(Khan) ## List
+class(Khan) ## List
+```
+
+## Check four dataset
+
+```{r}
+dim(Khan$xtrain); dim(Khan$xtest);dim(Khan$ytrain); dim(Khan$ytest)
+```
+
+### xtrain
+
+xtrain contains the 2308 gene expression values for 63 subjects 
+
+```{r}
+str(Khan$xtrain);  
+```
+
+
+
+
+### xtest
+
+xtest contains 20 test sample gene expression value
+
+```{r}
+str(Khan$xtest);  
+```
+
+
+### ytrain 
+
+ytrain records the corresponding tumor type for 63 subjects
+
+```{r}
+table(Khan$ytrain)
+str(Khan$ytrain)
+```
+
+### ytest 
+
+
+y test 20 different test sample tumor type
+
+```{r}
+table(Khan$ytest)
+str(Khan$ytest)
+```
+
+# Trainging dataset
+
+
+```{r}
+khan.train <- data.frame(x = Khan$xtrain, y = as.factor(Khan$ytrain))
+str(khan.train)
+dim(khan.train)
+head(khan.train)
+```
+
+
+# Random Forest model with default hyperparameter setting
+
+
+```{r}
+set.seed(471)  
+rf.1 <- randomForest(y ~. , data=khan.train, proximity=FALSE, importance=TRUE, ntree=1000, maxdepth=5, na.action=na.roughfix)
+
+varImpPlot(rf.1, type=2, cex=.8, color="black",pch=16, scale=T)
+```
+
+
+```{r}
+plot(rf.1$err.rate[,1], type='l', xlab='trees', ylab='Error') 
+```
+
+## M hyperparameter tuning
+ 
+```{r}
+set.seed(471)  
+rf.1 <- randomForest(y ~. , data=khan.train, proximity=FALSE, importance=TRUE, ntree=1000, maxdepth=5, na.action=na.roughfix, mtry=1)
+rf.10 <- randomForest(y ~. , data=khan.train, proximity=FALSE, importance=TRUE, ntree=1000, maxdepth=5, na.action=na.roughfix, mtry=10)
+rf.100 <- randomForest(y ~. , data=khan.train, proximity=FALSE, importance=TRUE, ntree=1000, maxdepth=5, na.action=na.roughfix, mtry=100)
+
+rf.1000 <- randomForest(y ~. , data=khan.train, proximity=FALSE, importance=TRUE, ntree=1000, maxdepth=5, na.action=na.roughfix, mtry=1000)
+```
+ 
+## Variance importance plots
+
+```{r}
+varImpPlot(rf.1, type=2, cex=.8, color="black",pch=16, scale=T)
+varImpPlot(rf.10, type=2, cex=.8, color="black",pch=16, scale=T)
+varImpPlot(rf.100, type=2, cex=.8, color="black",pch=16, scale=T)
+varImpPlot(rf.1000, type=2, cex=.8, color="black",pch=16, scale=T)
+```
+
+I tried  the models with the hyperpameter for 1, 10, 100, 1000, sounds 1000, looks I need at least 100 for a good random forest model to show variance importance.
+
+
+
+# Boosting model
+
+## A model with 1000 trees
+
+```{r}
+set.seed(2019) 
+bt = gbm(y ~ ., data=khan.train, distribution="gaussian", n.trees=1000) 
+bt  
+names(bt) 
+```
+
+## Different tree numbers models
+
+```{r}
+set.seed(2019) 
+bt1 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 200) 
+bt2 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 1000) 
+bt3 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 5000) 
+```
+
+
+```{r}
+summary(bt1,xlim=c(0,0.01))
+summary(bt2,xlim=c(0,0.01))
+summary(bt3,xlim=c(0,0.01))
+```
+
+Looks boost model needs at least 1000 trees, 5000 trees will be much better. next I try to change the shrinkage paramter. 
+
+## Change shrinkag parmater
+
+```{r}
+set.seed(2019) 
+bt4 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 5000, shrinkage = 0.01) 
+bt5 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 5000,shrinkage = 0.1) 
+bt6 <- gbm(y ~ ., data=khan.train,  distribution = "gaussian", n.trees = 5000,shrinkage = 0.5) 
+```
+
+```{r}
+summary(bt4,xlim=c(0,0.01))
+summary(bt5,xlim=c(0,0.01))
+summary(bt6,xlim=c(0,0.01))
+```
+
+Based on the plot, I would say the model with 5000 trees and shrinkage paramter as 0.01 has the best performance.
+

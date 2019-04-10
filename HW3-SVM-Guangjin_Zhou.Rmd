@@ -1,0 +1,217 @@
+---
+title: "Support vector machine"
+author: "Guangjin Zhou"
+date: "April 8, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Chaptor 9 question 8
+
+This problem involves the OJ data set which is part of the ISLR package.
+
+```{r}
+library(e1071); 
+library(ISLR); ls("package:ISLR")
+```
+
+```{r}
+dim(OJ); str(OJ); head(OJ)
+```
+
+
+## (a) Create a training set containing a random sample of 800 observations, and a test set containing the remaining observations. 
+
+```{r}
+set.seed(471)
+tr<-sample(1:nrow(OJ),800)
+train<-OJ[tr,]
+test<-OJ[-tr,]
+```
+
+
+## (b) Fit a support vector classi???er to the training data using cost=0.01, with Purchase as the response and the other variables as predictors. Use the summary() function to produce summary statistics, and describe the results obtained. 
+
+ 
+
+```{r}
+svmfit<-svm(Purchase ~ .,data=train, kernel = "linear", cost = 0.01)
+summary(svmfit)
+```
+
+The linear svm model with cost as 0.01, gamma as default  have 438 support vectors from 800 training data points. Among these, 219 belong to level MM and remaining CH belong to level MM.
+
+## (c) What are the training and test error rates?
+
+### Training data test error
+
+```{r}
+table(train$Purchase, predict(svmfit, train))
+```
+
+So the test error for training data is: (59+76)/(423+242+59+76)=0.16875
+
+### Test data test error
+
+```{r}
+ 
+table(test$Purchase,predict(svmfit,test))
+```
+
+
+So the test error for training data is: (29+18)/(153 +70+29+18)=0.1740741
+
+
+## (d) Use the tune function to select an optimal cost. Consider values in the range 0.01 to 10.
+
+```{r}
+set.seed(471)
+tune.fit <- tune(svm, Purchase ~ ., data = train, kernel = "linear", ranges = list(cost = 10^seq(-2, 1, by = 0.25)))
+summary(tune.fit)
+```
+
+
+## (e) Compute the training and test error rates using this new value for cost. 
+
+### Best model
+
+```{r}
+tune.fit$best.performance;
+svm.best<-tune.fit$best.model;summary(svm.best)
+```
+
+
+### Training data error with best model
+
+
+```{r}
+table(train$Purchase, predict(svm.best, train))
+```
+
+
+So the test error by best model for training data is: (56+72)/(426 +246+56+72)=0.16
+
+### Test data error with best model
+
+```{r}
+table(test$Purchase,predict(svm.best,test))
+```
+
+So the test error by best model for test data (28+20)/(151 +71+28+20)=0.1777778
+
+
+## (f) Repeat parts (b) through (e) using a support vector machine with a radial kernel. Use the default value for gamma. 
+
+### Model without tune
+
+```{r}
+svm.radial <- svm(Purchase ~ ., kernel = "radial", data = train)
+summary(svm.radial)
+```
+
+### The test error without tuning
+
+```{r}
+table(train$Purchase, predict(svm.radial,train))
+```
+
+So the test error by best model for training data is: (78+41)/(441 +240+78+41)=0.14875
+
+```{r}
+table(test$Purchase, predict(svm.radial,test))
+```
+
+
+So the test error by best model for test data (33+16)/(155 +64+33+16)=0.1828358
+
+### The tuning model
+
+```{r}
+set.seed(471)
+svm.kernal.tune <- tune(svm, Purchase ~ ., data = train, kernel = "radial", ranges = list(cost = 10^seq(-2, 1, by = 0.25)))
+summary(svm.kernal.tune)
+```
+
+### The best tuned kernal model
+
+```{r}
+svm.kernal.tune$best.performance;
+svm.kernal.best<-svm.kernal.tune$best.model;summary(svm.kernal.best)
+```
+
+### the best tuning model test errors
+
+```{r}
+table(train$Purchase, predict(svm.kernal.best,train))
+```
+
+So the test error by best model for training data is: (56+72)/(444 +244+74+38)=0.16
+
+```{r}
+table(test$Purchase, predict(svm.kernal.best,test))
+```
+
+So the test error by best model for training data is: (36+16)/(155 +63+36+16)=0.1925926
+
+
+## (g) Repeat parts (b) through (e) using a support vector machine with a polynomial kernel. Set degree=2. (h) Overall, which approach seems to give the best results on this data?
+
+### Polynominal SVM model
+
+```{r}
+set.seed(471)
+svm.poly <- svm(Purchase ~ ., kernel = "polynomial", data = train, degree = 2)
+summary(svm.poly)
+```
+
+### The test error without tuning
+
+```{r}
+table(train$Purchase, predict(svm.poly,train))
+```
+
+
+So the test error for training data is: (109+33)/(449 +209+109+33)=0.1775
+
+```{r}
+table(test$Purchase, predict(svm.poly,test))
+```
+
+
+So the test error test data is: (44+13)/(158 +55+44+13)=0.2111111
+
+### The tuning model
+
+```{r}
+set.seed(471)
+svm.poly.tune <- tune(svm, Purchase ~ ., data = train, kernel = "polynomial", ranges = list(cost = 10^seq(-2, 1, by = 0.25)))
+summary(svm.poly.tune)
+```
+
+### The best tuned polynominal model
+
+```{r}
+svm.poly.tune$best.performance;
+svm.poly.best<-svm.poly.tune$best.model;summary(svm.poly.best)
+```
+
+### the best tuning model test errors
+
+```{r}
+table(train$Purchase, predict(svm.poly.best,train))
+```
+
+So the test error by best model for training data is: (87+30)/(452 +231+87+30)=0.14625
+
+```{r}
+table(test$Purchase, predict(svm.poly.best,test))
+```
+
+So the test error by best model for test data is: (42+15)/(156 +57+42+15)=0.2111111
+
+## (h) Overall, which approach seems to give the best results on this data ?
+
+Overall, kernel gave minimum misclassification error on both train (0.16) and test data (0.1925926). The linear svm model is a little worse than kernal model. 
